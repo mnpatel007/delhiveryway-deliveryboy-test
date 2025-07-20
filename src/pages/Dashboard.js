@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import io from 'socket.io-client';
-import axios from 'axios';
 
 const socket = io(process.env.REACT_APP_BACKEND_URL);
 
@@ -12,11 +11,17 @@ const Dashboard = () => {
 
     useEffect(() => {
         if (deliveryBoy) {
+            console.log('✅ Registering delivery boy to socket room...');
             socket.emit('registerDelivery', deliveryBoy.deliveryBoy._id);
         }
 
         socket.on('newDeliveryAssignment', (payload) => {
-            if (!assigned) setPendingPopup(payload);
+            console.log('📦 Received newDeliveryAssignment payload:', payload);
+            if (!assigned) {
+                setPendingPopup(payload);
+            } else {
+                console.log('🟡 Ignored because already assigned');
+            }
         });
 
         return () => {
@@ -25,9 +30,9 @@ const Dashboard = () => {
     }, [deliveryBoy, assigned]);
 
     const handleAccept = () => {
+        console.log('🟢 Accepted delivery:', pendingPopup);
         setAssigned(pendingPopup);
         setPendingPopup(null);
-        // Optionally notify backend about assignment
     };
 
     return (
@@ -36,8 +41,8 @@ const Dashboard = () => {
             <button onClick={logout}>Logout</button>
 
             {pendingPopup && !assigned && (
-                <div className="modal">
-                    <h3>New Delivery Assignment</h3>
+                <div className="modal" style={{ border: '1px solid black', padding: '10px', margin: '20px', background: '#f8f8f8' }}>
+                    <h3>🚨 New Delivery Assignment</h3>
                     <p><strong>Earn:</strong> ₹{pendingPopup.earnAmount}</p>
                     <p><strong>To:</strong> {pendingPopup.address}</p>
                     <p><strong>Items:</strong> {pendingPopup.items.length}</p>
@@ -46,7 +51,7 @@ const Dashboard = () => {
             )}
 
             {assigned && (
-                <div>
+                <div style={{ marginTop: '20px' }}>
                     <h3>📦 Assigned Delivery</h3>
                     <p><strong>Address:</strong> {assigned.address}</p>
                     <p><strong>Shop:</strong> {assigned.shopDetails?.name}</p>
